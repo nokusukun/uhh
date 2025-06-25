@@ -5,13 +5,14 @@ UHH is an intelligent terminal command autocorrect system that uses AI to fix an
 ## Features
 
 - **Multi-shell support**: Automatically detects and supports PowerShell, CMD, Bash, Zsh, and Fish
-- **AI-powered corrections**: Uses OpenAI's GPT models to intelligently suggest and fix commands
-- **Colored output**: Beautiful colored terminal output for better readability
 - **Shell override**: Override detected shell for specific commands or globally
 - **Smart file context**: Automatically includes small file contents when referenced in prompts
 - **Command history**: Maintains history with "actually" revision feature
 - **Clipboard integration**: Automatically copies suggested commands to clipboard
 - **Configurable models**: Support for different OpenAI models
+
+## Warning
+*UHH is a powerful tool that can generate and execute shell commands. Use it with caution, especially when running commands that modify or delete files. Always review generated commands before executing them.*
 
 ## Installation
 
