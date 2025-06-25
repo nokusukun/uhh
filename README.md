@@ -18,7 +18,7 @@ UHH is an intelligent terminal command autocorrect system that uses AI to fix an
 
 1. Clone the repository:
 ```bash
-git clone <repository-url>
+git clone https://github.com/nokusukun/uhh
 cd uhh
 ```
 
