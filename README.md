@@ -35,7 +35,7 @@ go build -o uhh.exe
 
 ```bash
 # Basic command correction
-uhh "list files in current directory"
+uhh list files in current directory
 
 # Interactive mode (if no arguments provided)
 uhh
@@ -49,10 +49,10 @@ Override the detected shell for specific commands:
 
 ```bash
 # Use bash commands regardless of current shell
-uhh !shell=bash "list files recursively"
+uhh !shell=bash list files recursively
 
 # Use PowerShell commands
-uhh !shell=powershell "get running processes"
+uhh !shell=powershell get running processes
 
 # Use CMD commands
 uhh !shell=cmd "show directory contents"
@@ -66,10 +66,10 @@ uhh --shell bash "find files with extension .txt"
 Revise the previous command with additional context:
 
 ```bash
-uhh "copy file to backup"
+uhh copy file to backup
 # Output: cp file.txt backup/
 
-uhh "actually make it recursive"
+uhh actually make it recursive
 # Output: cp -r file.txt backup/
 ```
 
@@ -80,7 +80,7 @@ When you reference files in your prompt, UHH can automatically include their con
 ```bash
 # Enable file context and reference a config file
 export UHH_APPEND_SMALL_CONTEXT=true
-uhh "install dependencies from package.json"
+uhh install dependencies from package.json
 ```
 
 ## Configuration
