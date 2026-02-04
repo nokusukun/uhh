@@ -229,6 +229,28 @@ func ListModels(ctx context.Context, providerName, apiKey, baseURL string) ([]Mo
 
 // isRelevantModel filters models to only include chat/completion models
 func isRelevantModel(id string) bool {
+	// Exclude fine-tuned models by default
+	if strings.HasPrefix(id, "ft:") {
+		return false
+	}
+
+	// Exclude embedding, moderation, whisper, tts, dall-e, image models
+	if strings.Contains(id, "embedding") ||
+		strings.Contains(id, "moderation") ||
+		strings.Contains(id, "whisper") ||
+		strings.Contains(id, "tts") ||
+		strings.Contains(id, "dall-e") ||
+		strings.Contains(id, "image") ||
+		strings.Contains(id, "transcribe") ||
+		strings.Contains(id, "realtime") ||
+		strings.Contains(id, "audio") ||
+		strings.Contains(id, "davinci") ||
+		strings.Contains(id, "babbage") ||
+		strings.Contains(id, "curie") ||
+		strings.Contains(id, "ada") {
+		return false
+	}
+
 	// Include GPT models
 	if strings.Contains(id, "gpt") {
 		return true
@@ -248,18 +270,6 @@ func isRelevantModel(id string) bool {
 	// Include o1/o3 reasoning models
 	if strings.HasPrefix(id, "o1") || strings.HasPrefix(id, "o3") {
 		return true
-	}
-	// Exclude embedding, moderation, whisper, tts, dall-e models
-	if strings.Contains(id, "embedding") ||
-		strings.Contains(id, "moderation") ||
-		strings.Contains(id, "whisper") ||
-		strings.Contains(id, "tts") ||
-		strings.Contains(id, "dall-e") ||
-		strings.Contains(id, "davinci") ||
-		strings.Contains(id, "babbage") ||
-		strings.Contains(id, "curie") ||
-		strings.Contains(id, "ada") {
-		return false
 	}
 	return false
 }
