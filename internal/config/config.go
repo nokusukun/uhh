@@ -5,6 +5,7 @@ import (
 	"os"
 	"path/filepath"
 	"strconv"
+	"strings"
 )
 
 // Config represents the application configuration
@@ -94,10 +95,23 @@ func Load() (*Config, error) {
 		return nil, err
 	}
 
+	// Sanitize config values (trim whitespace from API keys, etc.)
+	cfg.sanitize()
+
 	// Apply environment variable overrides
 	cfg.applyEnvOverrides()
 
 	return cfg, nil
+}
+
+// sanitize cleans up config values (trims whitespace from keys, etc.)
+func (c *Config) sanitize() {
+	for name, settings := range c.Providers {
+		settings.APIKey = strings.TrimSpace(settings.APIKey)
+		settings.BaseURL = strings.TrimSpace(settings.BaseURL)
+		settings.Model = strings.TrimSpace(settings.Model)
+		c.Providers[name] = settings
+	}
 }
 
 // Save writes config to disk
