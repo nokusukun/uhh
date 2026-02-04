@@ -207,8 +207,8 @@ func runMain(cmd *cobra.Command, args []string) {
 		}
 	}
 
-	// Determine if we should use agent mode
-	useAgent := agentModeFlag || (cfg.Agent.EnabledTools != nil && len(cfg.Agent.EnabledTools) > 0 && p.SupportsToolCalling())
+	// Determine if we should use agent mode (only when explicitly requested)
+	useAgent := agentModeFlag && p.SupportsToolCalling()
 
 	var completion string
 
@@ -223,6 +223,15 @@ func runMain(cmd *cobra.Command, args []string) {
 	if err != nil {
 		output.PrintError(fmt.Sprintf("Error: %v", err))
 		os.Exit(1)
+	}
+
+	// Check if the model indicated the task is too complex
+	if strings.HasPrefix(completion, "[COMPLEX]") {
+		message := strings.TrimPrefix(completion, "[COMPLEX]")
+		message = strings.TrimSpace(message)
+		output.PrintWarn("Task is too complex for a single command.")
+		output.PrintInfo(message)
+		return
 	}
 
 	// Output result

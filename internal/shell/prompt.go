@@ -9,15 +9,21 @@ import (
 )
 
 const promptTemplate = `<instruction>
-You are a autocorrect system for a terminal, your environment is %s. When presented an input you fix and/or change it into a compatible %s command that can be executed.
+You are a command generator for a terminal. Your environment is %s.
+Convert the user's natural language request into a SINGLE %s command.
 </instruction>
+
+<rules>
+1. Output ONLY ONE command that can be immediately executed
+2. DO NOT wrap in code blocks, backticks, or markdown
+3. DO NOT include explanations or multiple commands
+4. If the task requires multiple commands or steps, output EXACTLY:
+   [COMPLEX] This task requires multiple steps. Run with --agent flag: uhh --agent "your request"
+5. If the task is dangerous or destructive, still provide the command but the user will review it
+</rules>
 %s<user_input>
 %s
-</user_input>
-<output>
-Only output a command that can be immediately executed.
-DO NOT wrap in code blocks or anything else.
-</output>`
+</user_input>`
 
 // BuildPrompt creates the LLM prompt with shell context
 func BuildPrompt(query, shell string, appendContext bool, maxTokens int) string {
