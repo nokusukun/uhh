@@ -1,353 +1,407 @@
-# UHH - Terminal Command Autocorrect
+# UHH - AI-Powered Terminal Command Assistant
 
-UHH is an intelligent terminal command autocorrect system that uses AI to fix and suggest compatible shell commands. It automatically detects your shell environment and provides context-aware command suggestions.
+[![CI](https://github.com/nokusukun/uhh/actions/workflows/ci.yaml/badge.svg)](https://github.com/nokusukun/uhh/actions/workflows/ci.yaml)
+[![Release](https://github.com/nokusukun/uhh/actions/workflows/release.yaml/badge.svg)](https://github.com/nokusukun/uhh/actions/workflows/release.yaml)
+[![Go Version](https://img.shields.io/badge/go-1.24+-blue.svg)](https://golang.org/dl/)
+[![License](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
+
+UHH is an AI-powered CLI tool that generates shell commands from natural language descriptions. It supports multiple LLM providers and automatically detects your shell environment.
 
 ## Features
 
-- **Multi-shell support**: Automatically detects and supports PowerShell, CMD, Bash, Zsh, and Fish
-- **Shell override**: Override detected shell for specific commands or globally
-- **Smart file context**: Automatically includes small file contents when referenced in prompts
-- **Command history**: Maintains history with "actually" revision feature
-- **Clipboard integration**: Automatically copies suggested commands to clipboard
-- **Configurable models**: Support for different OpenAI models
-
-## Warning
-*UHH is a powerful tool that can generate and execute shell commands. Use it with caution, especially when running commands that modify or delete files. Always review generated commands before executing them.*
+- **Multi-Provider Support**: OpenAI, Google Gemini, DeepSeek, Kimi (Moonshot), GLM (Zhipu AI)
+- **Smart Shell Detection**: Automatically detects PowerShell, CMD, Bash, Zsh, Fish
+- **Clipboard Integration**: Generated commands are automatically copied to clipboard
+- **Command History**: Tracks your prompts and generated commands
+- **"Actually" Revision**: Refine previous commands with additional context
+- **File Context**: Optionally include referenced file contents in prompts
+- **Interactive Onboarding**: Easy setup wizard for first-time configuration
+- **Cross-Platform**: Binaries available for Linux, macOS, and Windows
 
 ## Installation
 
-1. Clone the repository:
+### One-Line Install (Recommended)
+
+**Linux/macOS:**
 ```bash
-git clone https://github.com/nokusukun/uhh
+curl -fsSL https://raw.githubusercontent.com/nokusukun/uhh/main/install.sh | bash
+```
+
+**Windows (PowerShell):**
+```powershell
+irm https://raw.githubusercontent.com/nokusukun/uhh/main/install.ps1 | iex
+```
+
+### Manual Download
+
+Download the latest release for your platform from the [Releases](https://github.com/nokusukun/uhh/releases) page.
+
+#### Linux
+
+```bash
+# AMD64
+curl -LO https://github.com/nokusukun/uhh/releases/latest/download/uhh-linux-amd64.tar.gz
+tar -xzf uhh-linux-amd64.tar.gz
+sudo mv uhh /usr/local/bin/
+
+# ARM64
+curl -LO https://github.com/nokusukun/uhh/releases/latest/download/uhh-linux-arm64.tar.gz
+tar -xzf uhh-linux-arm64.tar.gz
+sudo mv uhh /usr/local/bin/
+```
+
+#### macOS
+
+```bash
+# Intel Mac
+curl -LO https://github.com/nokusukun/uhh/releases/latest/download/uhh-darwin-amd64.tar.gz
+tar -xzf uhh-darwin-amd64.tar.gz
+sudo mv uhh /usr/local/bin/
+
+# Apple Silicon
+curl -LO https://github.com/nokusukun/uhh/releases/latest/download/uhh-darwin-arm64.tar.gz
+tar -xzf uhh-darwin-arm64.tar.gz
+sudo mv uhh /usr/local/bin/
+```
+
+#### Windows
+
+Download `uhh-windows-amd64.zip` from releases, extract, and add to your PATH.
+
+### Build from Source
+
+```bash
+git clone https://github.com/nokusukun/uhh.git
 cd uhh
+go build -o uhh ./cmd/uhh
+
+# Install (Unix)
+sudo mv uhh /usr/local/bin/
 ```
 
-2. Build the application:
+## Quick Start
+
+### First-Time Setup
+
+Run the interactive setup wizard:
+
 ```bash
-go build -o uhh.exe
+uhh init
 ```
 
-3. Set up your OpenAI API key (see [Configuration](#configuration))
-
-## Usage
+This will guide you through:
+1. Selecting LLM providers
+2. Entering API keys
+3. Choosing default settings
 
 ### Basic Usage
 
-```bash
-# Basic command correction
-uhh list files in current directory
+Simply describe what you want to do:
 
-# Interactive mode (if no arguments provided)
-uhh
-> What do you want?
-> list files recursively
+```bash
+# No quotes needed for simple prompts
+uhh list all go files recursively
+
+# Use quotes for complex prompts
+uhh "find files larger than 100MB modified in the last week"
+
+# The generated command is printed and copied to clipboard
 ```
 
-### Shell Override
-
-Override the detected shell for specific commands:
+### Examples
 
 ```bash
-# Use bash commands regardless of current shell
-uhh !shell=bash list files recursively
+# File operations
+uhh find all pdf files in downloads folder
+uhh delete all node_modules folders recursively
+uhh compress this directory into a zip file
 
-# Use PowerShell commands
-uhh !shell=powershell get running processes
+# Git operations
+uhh show uncommitted changes
+uhh create a new branch called feature-login
+uhh squash last 3 commits
 
-# Use CMD commands
-uhh !shell=cmd "show directory contents"
-
-# Alternative syntax
-uhh --shell bash "find files with extension .txt"
-```
-
-### Command Revision with "Actually"
-
-Revise the previous command with additional context:
-
-```bash
-uhh copy file to backup
-# Output: cp file.txt backup/
-
-uhh actually make it recursive
-# Output: cp -r file.txt backup/
-```
-
-### File Context Integration
-
-When you reference files in your prompt, UHH can automatically include their contents for better context:
-
-```bash
-# Enable file context and reference a config file
-export UHH_APPEND_SMALL_CONTEXT=true
-uhh install dependencies from package.json
+# System operations
+uhh show disk usage by folder
+uhh find process using port 8080
+uhh list all running docker containers
 ```
 
 ## Configuration
 
+### Config File
+
+Configuration is stored in `~/.uhh/config.json`:
+
+```json
+{
+  "default_provider": "openai",
+  "providers": {
+    "openai": {
+      "enabled": true,
+      "api_key": "sk-...",
+      "model": "gpt-4o",
+      "temperature": 0.7
+    },
+    "gemini": {
+      "enabled": false,
+      "api_key": "",
+      "model": "gemini-2.0-flash"
+    },
+    "deepseek": {
+      "enabled": false,
+      "api_key": "",
+      "model": "deepseek-chat",
+      "base_url": "https://api.deepseek.com/v1"
+    },
+    "kimi": {
+      "enabled": false,
+      "api_key": "",
+      "model": "kimi-coding/k2p5"
+    },
+    "glm": {
+      "enabled": false,
+      "api_key": "",
+      "model": "glm-4",
+      "base_url": "https://open.bigmodel.cn/api/paas/v4"
+    }
+  },
+  "agent": {
+    "auto_approve": false,
+    "max_iterations": 10,
+    "enabled_tools": []
+  },
+  "shell": {
+    "override": "",
+    "append_file_context": false,
+    "max_context_tokens": 1000
+  },
+  "ui": {
+    "no_color": false
+  }
+}
+```
+
 ### Environment Variables
 
-#### `OPENAI_API_KEY`
-- **Description**: Your OpenAI API key for accessing GPT models
-- **Required**: Yes
-- **Alternative**: Store in `~/.openai.token.txt` file
-- **Example**: `export OPENAI_API_KEY="sk-..."`
+Environment variables override config file settings:
 
-#### `UHH_MODEL`
-- **Description**: OpenAI model to use for command generation
-- **Default**: `gpt-4o`
-- **Options**: Any valid OpenAI model (`gpt-4`, `gpt-3.5-turbo`, etc.)
-- **Example**: `export UHH_MODEL="gpt-4"`
+| Variable | Description |
+|----------|-------------|
+| `OPENAI_API_KEY` | OpenAI API key |
+| `GOOGLE_API_KEY` | Google Gemini API key |
+| `DEEPSEEK_API_KEY` | DeepSeek API key |
+| `MOONSHOT_API_KEY` | Kimi/Moonshot API key |
+| `GLM_API_KEY` | GLM/Zhipu AI API key |
+| `UHH_PROVIDER` | Override default provider |
+| `UHH_MODEL` | Override model for current provider |
+| `UHH_SHELL` | Override shell detection |
+| `UHH_NO_COLOR` | Disable colored output |
+| `UHH_AUTO_APPROVE` | Auto-approve tool executions (1/true) |
+| `UHH_APPEND_SMALL_CONTEXT` | Include file contents (true/1/token_limit) |
 
-#### `UHH_SHELL`
-- **Description**: Override shell detection globally
-- **Default**: Auto-detected
-- **Options**: `powershell`, `cmd`, `bash`, `zsh`, `fish`
-- **Example**: `export UHH_SHELL="bash"`
+## CLI Reference
 
-#### `UHH_APPEND_SMALL_CONTEXT`
-- **Description**: Enable automatic inclusion of small file contents when referenced
-- **Default**: Disabled
-- **Options**: 
-  - `true` or `1`: Enable with default 1000 token limit
-  - `false` or `0`: Disable
-  - Number (e.g., `500`): Enable with custom token limit
-- **Example**: `export UHH_APPEND_SMALL_CONTEXT="true"`
+```
+Usage:
+  uhh [prompt] [flags]
+  uhh [command]
 
-#### `UHH_NO_COLOR` / `NO_COLOR`
-- **Description**: Disable colored terminal output
-- **Default**: Colors enabled
-- **Options**: Any non-empty value disables colors
-- **Example**: `export UHH_NO_COLOR="1"` or `export NO_COLOR="1"`
-- **Note**: Supports both `UHH_NO_COLOR` and the standard `NO_COLOR` environment variable
+Available Commands:
+  init        Initialize or reconfigure UHH
+  config      Show current configuration
+  update      Check for and install updates
+  version     Print version information
+  completion  Generate shell completion scripts
+  help        Help about any command
 
-### API Key Setup
-
-#### Option 1: Environment Variable
-```bash
-# Windows (PowerShell)
-$env:OPENAI_API_KEY = "sk-your-api-key-here"
-
-# Windows (CMD)
-set OPENAI_API_KEY=sk-your-api-key-here
-
-# Linux/macOS
-export OPENAI_API_KEY="sk-your-api-key-here"
+Flags:
+  -p, --provider string   LLM provider (openai, gemini, deepseek, kimi, glm)
+  -m, --model string      Model to use
+  -s, --shell string      Override shell (powershell, cmd, bash, zsh, fish)
+  -y, --auto-approve      Auto-approve tool executions
+  -a, --agent             Run in agent mode with tool calling
+  -h, --help              Help for uhh
 ```
 
-#### Option 2: Token File
-Create a file at `~/.openai.token.txt` containing only your API key:
-```
-sk-your-api-key-here
-```
-
-## Color Scheme
-
-UHH uses colored output to improve readability and user experience:
-
-- **Generated Commands**: Bright green and bold - the main command output
-- **Success Messages**: Green - confirmation messages like "✓ Copied to clipboard!"
-- **Info Messages**: Cyan - informational messages like revision notifications
-- **Warning Messages**: Yellow - non-critical warnings
-- **Error Messages**: Red and bold - error messages
-- **Prompts**: Blue - interactive prompts like "What do you want?"
-
-### Disabling Colors
-
-Colors can be disabled using environment variables:
+### Provider Selection
 
 ```bash
-# Using UHH_NO_COLOR
-export UHH_NO_COLOR="1"
-uhh "list files"
+# Use default provider (from config)
+uhh list files
 
-# Using standard NO_COLOR
-export NO_COLOR="1"
-uhh "list files"
+# Use specific provider
+uhh --provider gemini list files
+uhh -p deepseek list files
 
-# Temporary disable (PowerShell)
-$env:UHH_NO_COLOR = "1"; .\uhh.exe "list files"
-
-# Temporary disable (CMD)
-set UHH_NO_COLOR=1 && uhh "list files"
+# Use specific model
+uhh --provider openai --model gpt-4-turbo list files
 ```
+
+### Shell Override
+
+```bash
+# Auto-detect (default)
+uhh list files
+
+# Force specific shell
+uhh --shell bash list files
+uhh -s powershell list files
+```
+
+### "Actually" Revision
+
+Refine your previous command:
+
+```bash
+uhh list all files
+# Output: ls -la
+
+uhh actually only show hidden files
+# Output: ls -la | grep '^\.'
+```
+
+## Supported Providers
+
+| Provider | Models | Notes |
+|----------|--------|-------|
+| OpenAI | gpt-4o, gpt-4-turbo, gpt-3.5-turbo | Default provider |
+| Google Gemini | gemini-2.0-flash, gemini-pro | Requires GOOGLE_API_KEY |
+| DeepSeek | deepseek-chat, deepseek-coder | OpenAI-compatible API |
+| Kimi (Moonshot) | kimi-coding/k2p5, moonshot-v1-8k | Supports KimiCoding API |
+| GLM (Zhipu AI) | glm-4, glm-3-turbo | OpenAI-compatible API |
+
+### Getting API Keys
+
+- **OpenAI**: [platform.openai.com/api-keys](https://platform.openai.com/api-keys)
+- **Google Gemini**: [aistudio.google.com/apikey](https://aistudio.google.com/apikey)
+- **DeepSeek**: [platform.deepseek.com](https://platform.deepseek.com)
+- **Kimi**: [platform.moonshot.ai](https://platform.moonshot.ai) or [kimi.com](https://kimi.com) for KimiCoding
+- **GLM**: [open.bigmodel.cn](https://open.bigmodel.cn)
 
 ## Shell Support
 
-### Supported Shells
-
 | Shell | Auto-Detection | Override Names |
 |-------|----------------|----------------|
-| PowerShell | ✅ | `powershell`, `pwsh`, `ps` |
-| Command Prompt | ✅ | `cmd`, `command` |
-| Bash | ✅ | `bash` |
-| Zsh | ✅ | `zsh` |
-| Fish | ✅ | `fish` |
+| PowerShell | Yes | `powershell`, `pwsh`, `ps` |
+| Command Prompt | Yes | `cmd`, `command` |
+| Bash | Yes | `bash` |
+| Zsh | Yes | `zsh` |
+| Fish | Yes | `fish` |
 
-### Shell Detection Priority
+## Advanced Features
 
-1. **Command line argument** (`!shell=` or `--shell`) - Highest priority
-2. **Environment variable** (`UHH_SHELL`) - Medium priority
-3. **Auto-detection** - Lowest priority (fallback)
+### Agent Mode (Experimental)
 
-## File Context Feature
-
-When `UHH_APPEND_SMALL_CONTEXT` is enabled, UHH automatically detects file references in your prompts and includes their contents for better context.
-
-### Supported File Patterns
-
-- Files with extensions: `file.txt`, `config.yaml`, `script.py`
-- Quoted file paths: `"path/to/file.json"`, `'config.ini'`
-- Common config files: `package.json`, `go.mod`, `Dockerfile`, `Makefile`, `README.md`, `.gitignore`
-
-### Example Usage
+Run commands interactively with tool calling:
 
 ```bash
-export UHH_APPEND_SMALL_CONTEXT="true"
+# Enable agent mode
+uhh --agent "find large files and show their sizes"
 
-# References package.json - content will be included automatically
-uhh "install the dependencies listed in package.json"
-
-# Custom token limit
-export UHH_APPEND_SMALL_CONTEXT="500"
-uhh "build the project using the configuration in go.mod"
+# With auto-approve (use with caution)
+uhh --agent --auto-approve "clean up temp files"
 ```
 
-## Command History
+### File Context
 
-UHH maintains a command history file at `~/.uhh.history.txt` that includes:
-- Timestamps
-- Shell used
-- Original prompt
-- Generated command
-
-### History Revision
-
-Use the "actually" feature to revise previous commands:
+Include referenced file contents in prompts:
 
 ```bash
-uhh "find files"
-# Output: find . -type f
-
-uhh "actually only .txt files"
-# Output: find . -type f -name "*.txt"
+# Enable in config or via environment
+export UHH_APPEND_SMALL_CONTEXT=true
+uhh "parse the package.json and list dependencies"
 ```
 
-## Examples
+### Updating
 
-### Basic Commands
+UHH can update itself to the latest version:
 
 ```bash
-# File operations
-uhh "copy file.txt to backup folder"
-uhh "delete all .log files"
-uhh "create a new directory called projects"
+# Check for updates and install
+uhh update
 
-# Process management
-uhh "kill process running on port 8080"
-uhh "show all running processes"
-uhh "restart nginx service"
-
-# Git operations
-uhh "add all files and commit with message 'initial commit'"
-uhh "push to origin main branch"
-uhh "create new branch called feature/auth"
+# Check current version
+uhh version
 ```
 
-### Shell-Specific Examples
+### Shell Completions
 
 ```bash
-# Force PowerShell syntax
-uhh !shell=powershell "get all files larger than 100MB"
-# Output: Get-ChildItem -Recurse | Where-Object {$_.Length -gt 100MB}
+# Bash
+uhh completion bash > /etc/bash_completion.d/uhh
 
-# Force Bash syntax
-uhh !shell=bash "get all files larger than 100MB"
-# Output: find . -type f -size +100M
+# Zsh
+uhh completion zsh > "${fpath[1]}/_uhh"
 
-# Force CMD syntax
-uhh !shell=cmd "get all files larger than 100MB"
-# Output: forfiles /s /m *.* /c "cmd /c if @fsize gtr 104857600 echo @path"
+# Fish
+uhh completion fish > ~/.config/fish/completions/uhh.fish
+
+# PowerShell
+uhh completion powershell > uhh.ps1
 ```
 
-### File Context Examples
+## Project Structure
 
-```bash
-# With package.json context
-export UHH_APPEND_SMALL_CONTEXT="true"
-uhh "run the start script defined in package.json"
-
-# With Dockerfile context
-uhh "build docker image using the Dockerfile configuration"
-
-# With go.mod context
-uhh "install dependencies specified in go.mod"
+```
+uhh/
+├── cmd/uhh/main.go           # CLI entry point
+├── internal/
+│   ├── config/               # Configuration management
+│   ├── provider/             # LLM provider implementations
+│   ├── tools/                # Tool definitions (bash, file operations)
+│   ├── agent/                # Agent loop for tool calling
+│   ├── tui/                  # Terminal UI components
+│   ├── shell/                # Shell detection and prompts
+│   ├── history/              # Command history
+│   ├── output/               # Colored output utilities
+│   └── updater/              # Self-update functionality
+├── .github/workflows/        # CI/CD pipelines
+├── go.mod
+└── README.md
 ```
 
 ## Troubleshooting
 
 ### Common Issues
 
-#### API Key Issues
-```
-Error: Failed to initialize OpenAI client
-```
-- Ensure `OPENAI_API_KEY` is set or `~/.openai.token.txt` exists
-- Verify your API key is valid and has sufficient credits
+**"No API key found"**
+```bash
+# Set via environment
+export OPENAI_API_KEY="sk-..."
 
-#### Shell Detection Issues
+# Or run setup
+uhh init
 ```
-Commands don't match my shell
-```
-- Use `!shell=<shell_name>` to override detection
-- Set `UHH_SHELL` environment variable for persistent override
-- Check that your shell is supported
 
-#### File Context Issues
+**"Unknown provider"**
+```bash
+# Check available providers
+uhh config
 ```
-Referenced files not being included
-```
-- Ensure `UHH_APPEND_SMALL_CONTEXT` is set to `true` or a number
-- Check that files exist and are under the token limit (default 1000 tokens ≈ 4000 characters)
-- Verify file paths are correct (relative paths are converted to absolute)
 
-#### Color Display Issues
+**Wrong shell commands generated**
+```bash
+# Override shell detection
+uhh --shell bash "your prompt"
 ```
-Colors not displaying properly or garbled output
-```
-- Some terminals may not support all color features
-- Disable colors using `UHH_NO_COLOR=1` or `NO_COLOR=1`
-- Ensure your terminal supports ANSI color codes
-- On Windows, use Windows Terminal or PowerShell 7+ for best color support
-
-### Debug Mode
-
-To enable debug output during shell parsing, you can temporarily modify the `ParseShellOverride` function to include debug prints.
 
 ## Contributing
 
+Contributions are welcome! Please feel free to submit a Pull Request.
+
 1. Fork the repository
-2. Create a feature branch: `git checkout -b feature/new-feature`
-3. Make your changes
-4. Test thoroughly
-5. Submit a pull request
+2. Create your feature branch (`git checkout -b feature/amazing-feature`)
+3. Commit your changes (`git commit -m 'Add amazing feature'`)
+4. Push to the branch (`git push origin feature/amazing-feature`)
+5. Open a Pull Request
 
 ## License
 
-[Add your license information here]
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
 
-## Changelog
+## Acknowledgments
 
-### Current Version
-- ✅ Multi-shell support with auto-detection
-- ✅ **Colored terminal output** with configurable disable options
-- ✅ Shell override via `!shell=` and `--shell` syntax
-- ✅ File context integration with `UHH_APPEND_SMALL_CONTEXT`
-- ✅ Command history and "actually" revision feature
-- ✅ Configurable OpenAI models via `UHH_MODEL`
-- ✅ Clipboard integration
-- ✅ Environment variable configuration
-
-## Support
-
-For issues, feature requests, or questions, please [create an issue](link-to-issues) in the repository.
+- [langchaingo](https://github.com/tmc/langchaingo) - Go LLM framework
+- [Charm](https://charm.sh) - Beautiful TUI components
+- [Cobra](https://github.com/spf13/cobra) - CLI framework
