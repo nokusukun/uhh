@@ -59,6 +59,23 @@ and can execute commands with tool calling.`,
 		Run:   runConfigShow,
 	}
 
+	// Config models subcommand
+	configModelsCmd = &cobra.Command{
+		Use:   "models [provider]",
+		Short: "List or select models for a provider",
+		Long:  "List available models from the API and optionally select one. If no provider is specified, uses the default provider.",
+		Run:   runConfigModels,
+	}
+
+	// Config set subcommand
+	configSetCmd = &cobra.Command{
+		Use:   "set <key> <value>",
+		Short: "Set a configuration value",
+		Long:  "Set a configuration value. Available keys: provider, model, auto-approve",
+		Args:  cobra.ExactArgs(2),
+		Run:   runConfigSet,
+	}
+
 	// Update command
 	updateCmd = &cobra.Command{
 		Use:   "update",
@@ -92,6 +109,10 @@ func init() {
 	rootCmd.AddCommand(configCmd)
 	rootCmd.AddCommand(updateCmd)
 	rootCmd.AddCommand(versionCmd)
+
+	// Add config subcommands
+	configCmd.AddCommand(configModelsCmd)
+	configCmd.AddCommand(configSetCmd)
 }
 
 func main() {
@@ -320,6 +341,126 @@ func getModelOrDefault(model, providerName string) string {
 		return defaultModel
 	}
 	return "gpt-4o"
+}
+
+func runConfigModels(cmd *cobra.Command, args []string) {
+	cfg, err := config.Load()
+	if err != nil {
+		output.PrintError(fmt.Sprintf("Failed to load config: %v", err))
+		os.Exit(1)
+	}
+
+	// Determine which provider to use
+	providerName := cfg.DefaultProvider
+	if len(args) > 0 {
+		providerName = args[0]
+	}
+
+	// Check if provider exists
+	settings, ok := cfg.Providers[providerName]
+	if !ok {
+		output.PrintError(fmt.Sprintf("Unknown provider: %s", providerName))
+		os.Exit(1)
+	}
+
+	displayName := config.ProviderDisplayNames[providerName]
+	output.PrintInfo(fmt.Sprintf("Fetching models for %s...", displayName))
+
+	// List available models
+	models, err := tui.ListAvailableModels(cfg, providerName)
+	if err != nil {
+		output.PrintError(fmt.Sprintf("Failed to fetch models: %v", err))
+		os.Exit(1)
+	}
+
+	// Print available models
+	fmt.Printf("\nAvailable models for %s:\n", displayName)
+	fmt.Printf("Current model: %s\n\n", settings.Model)
+	for _, m := range models {
+		marker := "  "
+		if m.ID == settings.Model {
+			marker = "* "
+		}
+		if m.Description != "" {
+			fmt.Printf("%s%s - %s\n", marker, m.ID, m.Description)
+		} else {
+			fmt.Printf("%s%s\n", marker, m.ID)
+		}
+	}
+
+	// Ask if user wants to change the model
+	fmt.Print("\nDo you want to change the model? [y/N]: ")
+	var response string
+	fmt.Scanln(&response)
+	response = strings.ToLower(strings.TrimSpace(response))
+
+	if response != "y" && response != "yes" {
+		return
+	}
+
+	// Run model selection
+	selectedModel, err := tui.RunModelSelection(cfg, providerName)
+	if err != nil {
+		output.PrintError(fmt.Sprintf("Model selection failed: %v", err))
+		os.Exit(1)
+	}
+
+	// Update config
+	settings.Model = selectedModel
+	cfg.Providers[providerName] = settings
+
+	if err := cfg.Save(); err != nil {
+		output.PrintError(fmt.Sprintf("Failed to save config: %v", err))
+		os.Exit(1)
+	}
+
+	output.PrintSuccess(fmt.Sprintf("Model changed to: %s", selectedModel))
+}
+
+func runConfigSet(cmd *cobra.Command, args []string) {
+	cfg, err := config.Load()
+	if err != nil {
+		output.PrintError(fmt.Sprintf("Failed to load config: %v", err))
+		os.Exit(1)
+	}
+
+	key := strings.ToLower(args[0])
+	value := args[1]
+
+	switch key {
+	case "provider", "default_provider", "default-provider":
+		// Validate provider exists
+		if _, ok := cfg.Providers[value]; !ok {
+			output.PrintError(fmt.Sprintf("Unknown provider: %s", value))
+			os.Exit(1)
+		}
+		cfg.DefaultProvider = value
+		output.PrintSuccess(fmt.Sprintf("Default provider set to: %s", value))
+
+	case "model":
+		// Set model for default provider
+		providerName := cfg.DefaultProvider
+		if settings, ok := cfg.Providers[providerName]; ok {
+			settings.Model = value
+			cfg.Providers[providerName] = settings
+			output.PrintSuccess(fmt.Sprintf("Model for %s set to: %s", providerName, value))
+		}
+
+	case "auto-approve", "auto_approve", "autoapprove":
+		val := strings.ToLower(value)
+		cfg.Agent.AutoApprove = val == "true" || val == "1" || val == "yes"
+		output.PrintSuccess(fmt.Sprintf("Auto-approve set to: %v", cfg.Agent.AutoApprove))
+
+	default:
+		output.PrintError(fmt.Sprintf("Unknown config key: %s", key))
+		output.PrintInfo("Available keys: provider, model, auto-approve")
+		os.Exit(1)
+	}
+
+	if err := cfg.Save(); err != nil {
+		output.PrintError(fmt.Sprintf("Failed to save config: %v", err))
+		os.Exit(1)
+	}
 }
 
 func runUpdate(cmd *cobra.Command, args []string) {

@@ -238,6 +238,38 @@ uhh -p deepseek list files
 uhh --provider openai --model gpt-4-turbo list files
 ```
 
+### Model Selection
+
+UHH can fetch available models from your provider's API and let you select one:
+
+```bash
+# List available models for default provider
+uhh config models
+
+# List models for a specific provider
+uhh config models openai
+uhh config models gemini
+
+# Set model directly
+uhh config set model gpt-4o
+```
+
+### Configuration Management
+
+```bash
+# Show current configuration
+uhh config
+
+# Set default provider
+uhh config set provider gemini
+
+# Set model
+uhh config set model gpt-4-turbo
+
+# Enable/disable auto-approve
+uhh config set auto-approve true
+```
+
 ### Shell Override
 
 ```bash
