@@ -94,15 +94,19 @@ jobs:
     needs: build
     runs-on: ubuntu-latest
     steps:
-      - name: Download all artifacts
-        uses: actions/download-artifact@v4
-        with:
-          path: dist
+      - name: Download release assets
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          mkdir -p dist
+          cd dist
+          gh release download "${{ github.event.release.tag_name }}" --repo "${{ github.repository }}" --pattern "*.tar.gz" --pattern "*.zip"
+          ls -la
 
       - name: Generate SHA256 checksums
         run: |
           cd dist
-          find . -type f \( -name "*.tar.gz" -o -name "*.zip" \) -exec sha256sum {} \; > checksums.txt
+          sha256sum *.tar.gz *.zip > checksums.txt
           cat checksums.txt
 
       - name: Upload checksums
