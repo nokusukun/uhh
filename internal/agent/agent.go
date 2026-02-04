@@ -123,6 +123,9 @@ func (a *Agent) Run(ctx context.Context, userPrompt string) (*Result, error) {
 
 		// Check if there are tool calls
 		if len(choice.ToolCalls) > 0 {
+			// Add assistant message with tool calls to context FIRST
+			a.context.AddAssistantMessageWithToolCalls(choice.Content, choice.ToolCalls)
+
 			// Process tool calls
 			for _, toolCall := range choice.ToolCalls {
 				execution := a.executeToolCall(ctx, toolCall)
